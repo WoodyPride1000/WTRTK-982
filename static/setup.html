@@ -1,24 +1,9 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WTRTK-982 コンフィグ設定</title>
-
-    <!-- Chosen Palette: Warm Neutrals with Subtle Accents -->
-    <!-- Application Structure Plan: This SPA is designed with a dashboard-like structure, logically grouping configuration parameters into distinct sections: Connection Settings, Output Message Settings (NMEA and Unicore Binary), Satellite Selection, Elevation Mask, GNSS Parameters, Received Data Display, and Action Buttons. This structure was chosen to provide a clear, step-by-step approach for users to configure the module, enhancing usability by segmenting complex settings into manageable parts. The user flow is linear from top to bottom (configure connection, then outputs, then satellite constellations, then elevation mask, then GNSS parameters, then observe data, then apply/save). -->
-    <!-- Visualization & Content Choices:
-        - Connection Settings: Input fields for serial port path and dropdown for baud rate. Goal: Inform/Configure. Viz/Presentation: HTML form elements. Interaction: Direct input, dropdown selection. Justification: Standard, intuitive for connection parameters. Library/Method: HTML, JS.
-        - Output Message Settings: Checkboxes for enabling/disabling specific NMEA messages (GGA, RMC, VTG, GPHDT) and a dropdown for update rate. Goal: Configure output. Viz/Presentation: Checkboxes, dropdown. Interaction: Toggle, selection. Justification: Clear control over message types and frequency. Library/Method: HTML, JS.
-        - Unicore Binary Output Settings: Checkbox for PVTSLN message and a dropdown for update rate. Goal: Configure advanced output. Viz/Presentation: Checkboxes, dropdown. Interaction: Toggle, selection. Justification: Provides access to module-specific high-precision data. Library/Method: HTML, JS.
-        - Satellite Selection: Checkboxes for enabling/disabling specific GNSS constellations (GPS, GLONASS, BDS, Galileo, QZSS). Goal: Configure satellite usage. Viz/Presentation: Checkboxes. Interaction: Toggle. Justification: Direct control over which satellite systems are used for positioning. Library/Method: HTML, JS.
-        - Elevation Mask: Dropdown for selecting the elevation mask angle. Goal: Filter satellite signals based on elevation. Viz/Presentation: Dropdown. Interaction: Selection. Justification: Allows users to exclude low-elevation satellites which might have higher signal interference. Library/Method: HTML, JS.
-        - GNSS Parameters: Input field for antenna baseline length, azimuth offset, and pitch offset. Goal: Configure physical antenna setup and calibration for heading calculation. Viz/Presentation: Input fields. Interaction: Direct input. Justification: Essential for accurate dual-antenna heading and its calibration. Library/Method: HTML, JS.
-        - Received Data Display (new): Textarea to show simulated or actual received data. Goal: Provide feedback on module output. Viz/Presentation: Textarea. Interaction: Read-only display. Justification: Crucial for verifying configuration success. Library/Method: HTML, JS.
-        - Action Buttons (Write/Save): Buttons to trigger configuration commands. Goal: Apply settings. Viz/Presentation: Buttons. Interaction: Click. Justification: Standard call-to-action for applying changes. Library/Method: HTML, JS.
-        - Status Message Area: Text display for feedback. Goal: Inform user of action status. Viz/Presentation: Text block. Interaction: Dynamic update. Justification: Essential for user feedback. Library/Method: HTML, JS.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -250,10 +235,10 @@
 
                 <!-- Received Data Display -->
                 <section class="mb-8">
-                    <h2 class="section-title">受信データ表示 (シミュレート)</h2>
+                    <h2 class="section-title">受信データ表示</h2>
                     <p class="text-gray-700 mb-3 text-sm">
-                        「設定を書き込む」ボタンをクリックすると、モジュールから受信されるであろうデータがここにシミュレート表示されます。
-                        **実際の通信にはバックエンドが必要です。**
+                        「設定を書き込む」ボタンをクリックすると、モジュールから受信されるデータがここに表示されます。
+                        問題がなければ「設定を保存」ボタンをクリックして永続化してください。
                     </p>
                     <textarea id="receivedDataDisplay" class="w-full h-64 p-3 border rounded-md bg-gray-100 font-mono text-sm resize-y" readonly placeholder="ここに受信データが表示されます..."></textarea>
                 </section>
@@ -298,7 +283,6 @@
             const azimuthOffsetInput = document.getElementById('azimuthOffset');
             const pitchOffsetInput = document.getElementById('pitchOffset');
 
-            // 受信データ表示エリアの参照
             const receivedDataDisplay = document.getElementById('receivedDataDisplay');
 
             const writeConfigBtn = document.getElementById('writeConfigBtn');
@@ -416,46 +400,6 @@
                 return commands;
             };
 
-            // 受信データをシミュレートする関数
-            const simulateReceivedData = (config) => {
-                let simulatedOutput = "";
-                const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false });
-                const lat = 35.6895; // Tokyo latitude
-                const lon = 139.6917; // Tokyo longitude
-                const alt = 50.0; // Sample altitude
-                const numSatellites = config.constellations.GPS || config.constellations.GLONASS || config.constellations.BDS || config.constellations.GALILEO || config.constellations.QZSS ? 12 : 0; // Simulate satellites if any constellation is enabled
-                const hdop = 0.8;
-                const speed = 0.5; // m/s
-                const course = 123.45; // degrees true
-
-                // Simulate NMEA messages
-                if (config.outputMessages.GPGGA) {
-                    simulatedOutput += `$GNGGA,${currentTime}.00,${lat.toFixed(7)},N,${lon.toFixed(7)},E,1,${numSatellites},${hdop.toFixed(1)},${alt.toFixed(4)},M,39.9836,M,,*XX\n`;
-                }
-                if (config.outputMessages.GPRMC) {
-                    simulatedOutput += `$GNRMC,${currentTime}.00,A,${lat.toFixed(7)},N,${lon.toFixed(7)},E,${speed.toFixed(2)},${course.toFixed(2)},010124,,,A*XX\n`;
-                }
-                if (config.outputMessages.GPVTG) {
-                    simulatedOutput += `$GNVTG,${course.toFixed(2)},T,${course.toFixed(2)},M,${(speed * 1.94384).toFixed(2)},N,${speed.toFixed(2)},K,A*XX\n`; // Speed in knots and km/h
-                }
-                if (config.outputMessages.GPHDT) {
-                    // Simulate heading based on baseline and offset
-                    const simulatedHeading = (150.0 + config.azimuthOffset).toFixed(1); // Example heading + offset
-                    simulatedOutput += `$GPHDT,${simulatedHeading},T*XX\n`;
-                }
-
-                // Simulate Unicore Binary PVTSLN message (simplified ASCII representation)
-                if (config.outputMessages.PVTSLN) {
-                    simulatedOutput += `[PVTSLN] Lat: ${lat.toFixed(7)}, Lon: ${lon.toFixed(7)}, Alt: ${alt.toFixed(3)}, Heading: ${(150.0 + config.azimuthOffset).toFixed(1)}, Pitch: ${(5.0 + config.pitchOffset).toFixed(1)}, Roll: 0.0, Solution: FIXED\n`;
-                }
-
-                if (simulatedOutput === "") {
-                    simulatedOutput = "選択されたメッセージタイプに対応するシミュレートデータはありません。";
-                }
-
-                return simulatedOutput;
-            };
-
             // Event listener for Write Config button
             writeConfigBtn.addEventListener('click', async () => {
                 const config = getCurrentConfig();
@@ -465,28 +409,31 @@
                 receivedDataDisplay.value = ''; // Clear previous data
 
                 try {
-                    console.log('シミュレートされた書き込みコマンド:', commands);
-                    console.log('シミュレートされたポート:', config.serialPort);
-                    console.log('シミュレートされたボーレート:', config.baudRate);
+                    // IPアドレスをハードコーディングせず、相対パスを使用
+                    const response = await fetch('/api/write_config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            port: config.serialPort,
+                            baudrate: config.baudRate,
+                            commands: commands
+                        })
+                    });
 
-                    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
+                    const result = await response.json();
 
-                    // Simulate module response for commands (OK message)
-                    let commandResponses = commands.map(cmd => `$command,${cmd},response: OK*XX`).join('\n');
-                    receivedDataDisplay.value = commandResponses + '\n\n';
-
-                    // Simulate received data after commands are processed
-                    showStatusMessage('設定が正常に書き込まれました。受信データをシミュレート中...', 'success');
-                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a bit before showing data
-
-                    const simulatedData = simulateReceivedData(config);
-                    receivedDataDisplay.value += simulatedData;
-
-                    showStatusMessage('設定が正常に書き込まれました。受信データを確認してください。', 'success');
+                    if (result.status === 'success') {
+                        showStatusMessage('設定が正常に書き込まれました。受信データを確認してください。', 'success');
+                        receivedDataDisplay.value = result.received_data;
+                    } else {
+                        showStatusMessage(`設定書き込みに失敗しました: ${result.message}`, 'error');
+                        receivedDataDisplay.value = result.received_data || "データなし";
+                    }
 
                 } catch (error) {
                     console.error('設定書き込みエラー:', error);
-                    showStatusMessage(`設定書き込みに失敗しました: ${error.message}`, 'error');
+                    showStatusMessage(`バックエンドとの通信に失敗しました: ${error.message}`, 'error');
+                    receivedDataDisplay.value = `エラー: バックエンドに接続できません。バックエンドが実行中であることを確認してください。\n${error.message}`;
                 }
             });
 
@@ -496,16 +443,30 @@
                 showStatusMessage('設定をモジュールに保存中...', 'info');
 
                 try {
-                    console.log('シミュレートされた保存コマンド: SAVE');
-                    console.log('シミュレートされたポート:', config.serialPort);
-                    console.log('シミュレートされたボーレート:', config.baudRate);
+                    // IPアドレスをハードコーディングせず、相対パスを使用
+                    const response = await fetch('/api/save_config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            port: config.serialPort,
+                            baudrate: config.baudRate
+                        })
+                    });
 
-                    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
-                    showStatusMessage('設定がモジュールに保存されました。', 'success');
-                    showStatusMessage('設定はモジュールの電源を切っても保持されます。', 'success');
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        showStatusMessage('設定がモジュールに保存されました。設定はモジュールの電源を切っても保持されます。', 'success');
+                        receivedDataDisplay.value = result.received_data;
+                    } else {
+                        showStatusMessage(`設定保存に失敗しました: ${result.message}`, 'error');
+                        receivedDataDisplay.value = result.received_data || "データなし";
+                    }
+
                 } catch (error) {
                     console.error('設定保存エラー:', error);
-                    showStatusMessage(`設定保存に失敗しました: ${error.message}`, 'error');
+                    showStatusMessage(`バックエンドとの通信に失敗しました: ${error.message}`, 'error');
+                    receivedDataDisplay.value = `エラー: バックエンドに接続できません。バックエンドが実行中であることを確認してください。\n${error.message}`;
                 }
             });
         });
