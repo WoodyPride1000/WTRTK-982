@@ -1,12 +1,13 @@
 # app.py
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, redirect, url_for
 from flask_cors import CORS # CORS (Cross-Origin Resource Sharing) を有効にするために必要
 import serial
 import time
 import sys
+import os # osモジュールをインポート
 
 # Flaskアプリケーションの初期化
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static') # static_folder を明示的に指定
 # 開発中はCORSを許可して、異なるオリジンからのリクエストを受け入れる
 # 本番環境では、フロントエンドのオリジンのみを許可するように設定を厳しくすることを推奨
 CORS(app)
@@ -18,9 +19,13 @@ READ_RESPONSE_DURATION = 2
 
 @app.route('/')
 def index():
-    """ルートURLへのアクセス時に簡単なメッセージを返す"""
-    # フロントエンドが 'setup.html' であることを考慮したメッセージ
-    return "WTRTK-982 Config Backend is running! Access the configuration UI via setup.html."
+    """ルートURLへのアクセス時にsetup.htmlにリダイレクトする"""
+    return redirect(url_for('serve_setup_html'))
+
+@app.route('/setup.html')
+def serve_setup_html():
+    """staticフォルダからsetup.htmlを配信する"""
+    return send_from_directory(app.static_folder, 'setup.html')
 
 @app.route('/api/write_config', methods=['POST'])
 def write_config():
@@ -159,3 +164,4 @@ if __name__ == '__main__':
     # ホストを '0.0.0.0' に設定することで、ラズベリーパイのどのIPアドレスからもアクセス可能にする
     # デフォルトポートは5000
     app.run(host='0.0.0.0', port=5000, debug=True) # debug=True は開発用
+
