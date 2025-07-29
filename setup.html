@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WTRTK-982 コンフィグ設定</title>
+
+    <!-- Chosen Palette: Warm Neutrals with Subtle Accents -->
+    <!-- Application Structure Plan: This SPA is designed with a dashboard-like structure, logically grouping configuration parameters into distinct sections: Connection Settings, Output Message Settings (NMEA and Unicore Binary), Satellite Selection, Elevation Mask, GNSS Parameters, Received Data Display, and Action Buttons. This structure was chosen to provide a clear, step-by-step approach for users to configure the module, enhancing usability by segmenting complex settings into manageable parts. The user flow is linear from top to bottom (configure connection, then outputs, then satellite constellations, then elevation mask, then GNSS parameters, then observe data, then apply/save). -->
+    <!-- Visualization & Content Choices:
+        - Connection Settings: Input fields for serial port path and dropdown for baud rate. Goal: Inform/Configure. Viz/Presentation: HTML form elements. Interaction: Direct input, dropdown selection. Justification: Standard, intuitive for connection parameters. Library/Method: HTML, JS.
+        - Output Message Settings: Checkboxes for enabling/disabling specific NMEA messages (GGA, RMC, VTG, GPHDT) and a dropdown for update rate. Goal: Configure output. Viz/Presentation: Checkboxes, dropdown. Interaction: Toggle, selection. Justification: Clear control over message types and frequency. Library/Method: HTML, JS.
+        - Unicore Binary Output Settings: Checkbox for PVTSLN message and a dropdown for update rate. Goal: Configure advanced output. Viz/Presentation: Checkboxes, dropdown. Interaction: Toggle, selection. Justification: Provides access to module-specific high-precision data. Library/Method: HTML, JS.
+        - Satellite Selection: Checkboxes for enabling/disabling specific GNSS constellations (GPS, GLONASS, BDS, Galileo, QZSS). Goal: Configure satellite usage. Viz/Presentation: Checkboxes. Interaction: Toggle. Justification: Direct control over which satellite systems are used for positioning. Library/Method: HTML, JS.
+        - Elevation Mask: Dropdown for selecting the elevation mask angle. Goal: Filter satellite signals based on elevation. Viz/Presentation: Dropdown. Interaction: Selection. Justification: Allows users to exclude low-elevation satellites which might have higher signal interference. Library/Method: HTML, JS.
+        - GNSS Parameters: Input field for antenna baseline length, azimuth offset, and pitch offset. Goal: Configure physical antenna setup and calibration for heading calculation. Viz/Presentation: Input fields. Interaction: Direct input. Justification: Essential for accurate dual-antenna heading and its calibration. Library/Method: HTML, JS.
+        - Received Data Display (new): Textarea to show simulated or actual received data. Goal: Provide feedback on module output. Viz/Presentation: Textarea. Interaction: Read-only display. Justification: Crucial for verifying configuration success. Library/Method: HTML, JS.
+        - Action Buttons (Write/Save): Buttons to trigger configuration commands. Goal: Apply settings. Viz/Presentation: Buttons. Interaction: Click. Justification: Standard call-to-action for applying changes. Library/Method: HTML, JS.
+        - Status Message Area: Text display for feedback. Goal: Inform user of action status. Viz/Presentation: Text block. Interaction: Dynamic update. Justification: Essential for user feedback. Library/Method: HTML, JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .section-title {
+            @apply text-xl font-semibold text-gray-800 border-b-2 border-orange-300 pb-2 mb-4;
+        }
+        .input-group {
+            @apply mb-4;
+        }
+        .input-label {
+            @apply block text-sm font-medium text-gray-700 mb-1;
+        }
+        .input-field, .select-field {
+            @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm p-2;
+        }
+        .checkbox-group {
+            @apply flex items-center mb-2;
+        }
+        .checkbox-input {
+            @apply h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded;
+        }
+        .checkbox-label {
+            @apply ml-2 block text-sm text-gray-900;
+        }
+        .action-button {
+            @apply px-6 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200;
+        }
+        .action-button-save {
+            @apply bg-orange-500 hover:bg-orange-600 focus:ring-orange-400;
+        }
+        .status-message {
+            @apply mt-6 p-4 rounded-md text-sm;
+        }
+        .status-success {
+            @apply bg-green-100 text-green-800;
+        }
+        .status-error {
+            @apply bg-red-100 text-red-800;
+        }
+        .status-info {
+            @apply bg-blue-100 text-blue-800;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <header class="w-full max-w-4xl bg-white p-6 rounded-xl shadow-md mb-6">
+            <h1 class="text-3xl font-bold text-center text-gray-800">WTRTK-982 コンフィグ設定</h1>
+            <p class="text-center text-gray-600 mt-2">GNSSモジュールの出力設定を調整します</p>
+        </header>
+
+        <main class="w-full max-w-4xl bg-white p-6 rounded-xl shadow-lg">
+            <div id="config-app">
+                <p class="text-gray-700 mb-6">
+                    このページでは、WTRTK-982 GNSSモジュールからのデータ出力設定をGUIから行えます。
+                    シリアルポートの接続設定、NMEAメッセージの出力、Unicore独自のバイナリメッセージの出力レート、
+                    利用する衛星コンステレーション、仰角マスク、そしてアンテナ間の基線長や方位角オフセットなどを調整し、
+                    「設定を書き込む」ボタンでモジュールにコマンドを送信します。
+                    設定をモジュールに永続的に保存するには、「設定を保存」ボタンをクリックしてください。
+                    **注意: 実際のモジュールとの通信には、別途ラズベリーパイ上で動作するバックエンドサーバーが必要です。**
+                </p>
+
+                <!-- Connection Settings -->
+                <section class="mb-8">
+                    <h2 class="section-title">接続設定</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label for="serialPort" class="input-label">シリアルポートパス</label>
+                            <input type="text" id="serialPort" value="/dev/ttyUSB0" class="input-field" placeholder="/dev/ttyUSB0 or COMx">
+                            <p class="text-xs text-gray-500 mt-1">ラズベリーパイの場合: /dev/ttyUSB0</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="baudRate" class="input-label">ボーレート</label>
+                            <select id="baudRate" class="select-field">
+                                <option value="9600">9600</option>
+                                <option value="19200">19200</option>
+                                <option value="38400">38400</option>
+                                <option value="57600">57600</option>
+                                <option value="115200" selected>115200</option>
+                                <option value="230400">230400</option>
+                                <option value="460800">460800</option>
+                                <option value="921600">921600</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Output Message Settings -->
+                <section class="mb-8">
+                    <h2 class="section-title">出力メッセージ設定</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label for="updateRate" class="input-label">更新レート (Hz)</label>
+                            <select id="updateRate" class="select-field">
+                                <option value="1.0" selected>1 Hz</option>
+                                <option value="0.5">2 Hz</option>
+                                <option value="0.2">5 Hz</option>
+                                <option value="0.1">10 Hz</option>
+                                <option value="0.05">20 Hz</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">モジュールの最大レートはマニュアルで確認してください。</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">NMEAメッセージ</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2">
+                            <div class="checkbox-group">
+                                <input id="enableGPGGA" type="checkbox" class="checkbox-input" checked>
+                                <label for="enableGPGGA" class="checkbox-label">GPGGA (測位データ)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input id="enableGPRMC" type="checkbox" class="checkbox-input">
+                                <label for="enableGPRMC" class="checkbox-label">GPRMC (最小推奨GNSSデータ)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input id="enableGPVTG" type="checkbox" class="checkbox-input">
+                                <label for="enableGPVTG" class="checkbox-label">GPVTG (対地コース・速度)</label>
+                            </div>
+                            <div class="checkbox-group">
+                                <input id="enableGPHDT" type="checkbox" class="checkbox-input">
+                                <label for="enableGPHDT" class="checkbox-label">GPHDT (真方位角)</label>
+                            </div>
+                            <!-- Add more NMEA messages as needed -->
+                        </div>
+                    </div>
+
+                    <div class="mt-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">Unicoreバイナリメッセージ</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2">
+                            <div class="checkbox-group">
+                                <input id="enablePVTSLN" type="checkbox" class="checkbox-input" checked>
+                                <label for="enablePVTSLN" class="checkbox-label">PVTSLN (位置・速度・ヘディング情報)</label>
+                            </div>
+                            <!-- Add more Unicore binary messages as needed -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Satellite Selection -->
+                <section class="mb-8">
+                    <h2 class="section-title">衛星選択</h2>
+                    <p class="text-gray-700 mb-3 text-sm">
+                        利用するGNSSコンステレーションを選択してください。モジュールは選択された衛星システムを組み合わせて測位を行います。
+                        (例: GPS単独、GPS+GLONASSなど)
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-2">
+                        <div class="checkbox-group">
+                            <input id="enableGPS" type="checkbox" class="checkbox-input" checked>
+                            <label for="enableGPS" class="checkbox-label">GPS</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input id="enableGLONASS" type="checkbox" class="checkbox-input" checked>
+                            <label for="enableGLONASS" class="checkbox-label">GLONASS</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input id="enableBDS" type="checkbox" class="checkbox-input" checked>
+                            <label for="enableBDS" class="checkbox-label">BDS (BeiDou)</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input id="enableGALILEO" type="checkbox" class="checkbox-input" checked>
+                            <label for="enableGALILEO" class="checkbox-label">GALILEO</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input id="enableQZSS" type="checkbox" class="checkbox-input" checked>
+                            <label for="enableQZSS" class="checkbox-label">QZSS (みちびき)</label>
+                        </div>
+                        <!-- Add more constellations if the module supports them -->
+                    </div>
+                </section>
+
+                <!-- Elevation Mask -->
+                <section class="mb-8">
+                    <h2 class="section-title">仰角マスク</h2>
+                    <p class="text-gray-700 mb-3 text-sm">
+                        仰角マスク角度を設定します。この角度以下の衛星からの信号は測位計算から除外されます。
+                        デフォルトは5度です。
+                    </p>
+                    <div class="input-group">
+                        <label for="elevationMask" class="input-label">仰角マスク角度 (度)</label>
+                        <select id="elevationMask" class="select-field">
+                            <option value="5" selected>5 度</option>
+                            <option value="10">10 度</option>
+                            <option value="15">15 度</option>
+                            <option value="20">20 度</option>
+                            <option value="25">25 度</option>
+                            <option value="30">30 度</option>
+                        </select>
+                    </div>
+                </section>
+
+                <!-- GNSS Parameters -->
+                <section class="mb-8">
+                    <h2 class="section-title">GNSSパラメータ</h2>
+                    <p class="text-gray-700 mb-3 text-sm">
+                        GNSS測位に関する追加パラメータを設定します。特にデュアルアンテナ測位に影響します。
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="input-group">
+                            <label for="baselineLength" class="input-label">アンテナ基線長 (メートル)</label>
+                            <input type="number" id="baselineLength" value="1.0" step="0.1" min="0.1" class="input-field" placeholder="例: 1.0">
+                            <p class="text-xs text-gray-500 mt-1">アンテナ間の物理的な距離を入力してください。正確な方位角計算に必要です。</p>
+                            <p class="text-xs text-red-500 mt-1">**コマンド**: `CONFIG HEADING LENGTH &lt;length&gt;`</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="azimuthOffset" class="input-label">方位角オフセット (度)</label>
+                            <input type="number" id="azimuthOffset" value="0.0" step="0.1" class="input-field" placeholder="例: 0.0">
+                            <p class="text-xs text-gray-500 mt-1">アンテナの取り付け向きと車両の進行方向とのずれを補正します。</p>
+                            <p class="text-xs text-red-500 mt-1">**コマンド**: `CONFIG HEADING OFFSET [Headingoffset Pitchoffset]`</p>
+                        </div>
+                        <div class="input-group">
+                            <label for="pitchOffset" class="input-label">ピッチオフセット (度)</label>
+                            <input type="number" id="pitchOffset" value="0.0" step="0.1" class="input-field" placeholder="例: 0.0">
+                            <p class="text-xs text-gray-500 mt-1">アンテナの取り付け向きと車両の水平面とのずれを補正します。</p>
+                            <p class="text-xs text-red-500 mt-1">**コマンド**: `CONFIG HEADING OFFSET [Headingoffset Pitchoffset]`</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Received Data Display -->
+                <section class="mb-8">
+                    <h2 class="section-title">受信データ表示 (シミュレート)</h2>
+                    <p class="text-gray-700 mb-3 text-sm">
+                        「設定を書き込む」ボタンをクリックすると、モジュールから受信されるであろうデータがここにシミュレート表示されます。
+                        **実際の通信にはバックエンドが必要です。**
+                    </p>
+                    <textarea id="receivedDataDisplay" class="w-full h-64 p-3 border rounded-md bg-gray-100 font-mono text-sm resize-y" readonly placeholder="ここに受信データが表示されます..."></textarea>
+                </section>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end space-x-4 mt-8">
+                    <button id="writeConfigBtn" class="action-button">設定を書き込む</button>
+                    <button id="saveConfigBtn" class="action-button action-button-save">設定を保存</button>
+                </div>
+
+                <!-- Status Message Area -->
+                <div id="statusMessage" class="status-message hidden"></div>
+            </div>
+        </main>
+
+        <footer class="w-full max-w-4xl text-center text-gray-500 text-sm mt-6">
+            <p>&copy; 2024 GNSS Compass Project. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const serialPortInput = document.getElementById('serialPort');
+            const baudRateSelect = document.getElementById('baudRate');
+            const updateRateSelect = document.getElementById('updateRate');
+
+            const enableGPGGACheckbox = document.getElementById('enableGPGGA');
+            const enableGPRMCCheckbox = document.getElementById('enableGPRMC');
+            const enableGPVTGCheckbox = document.getElementById('enableGPVTG');
+            const enableGPHDTCheckbox = document.getElementById('enableGPHDT');
+            const enablePVTSLNCheckbox = document.getElementById('enablePVTSLN');
+
+            const enableGPSCheckbox = document.getElementById('enableGPS');
+            const enableGLONASSCheckbox = document.getElementById('enableGLONASS');
+            const enableBDSCheckbox = document.getElementById('enableBDS');
+            const enableGALILEOCheckbox = document.getElementById('enableGALILEO');
+            const enableQZSSCheckbox = document.getElementById('enableQZSS');
+
+            const elevationMaskSelect = document.getElementById('elevationMask');
+
+            const baselineLengthInput = document.getElementById('baselineLength');
+            const azimuthOffsetInput = document.getElementById('azimuthOffset');
+            const pitchOffsetInput = document.getElementById('pitchOffset');
+
+            // 受信データ表示エリアの参照
+            const receivedDataDisplay = document.getElementById('receivedDataDisplay');
+
+            const writeConfigBtn = document.getElementById('writeConfigBtn');
+            const saveConfigBtn = document.getElementById('saveConfigBtn');
+            const statusMessageDiv = document.getElementById('statusMessage');
+
+            // Function to display status messages
+            const showStatusMessage = (message, type = 'info') => {
+                statusMessageDiv.textContent = message;
+                statusMessageDiv.className = `status-message ${type === 'success' ? 'status-success' : type === 'error' ? 'status-error' : 'status-info'}`;
+                statusMessageDiv.classList.remove('hidden');
+                setTimeout(() => {
+                    statusMessageDiv.classList.add('hidden');
+                }, 5000); // Hide after 5 seconds
+            };
+
+            // Function to get current configuration state from UI
+            const getCurrentConfig = () => {
+                return {
+                    serialPort: serialPortInput.value,
+                    baudRate: parseInt(baudRateSelect.value),
+                    updateInterval: parseFloat(updateRateSelect.value), // For ONTIME command
+                    outputMessages: {
+                        GPGGA: enableGPGGACheckbox.checked,
+                        GPRMC: enableGPRMCCheckbox.checked,
+                        GPVTG: enableGPVTGCheckbox.checked,
+                        GPHDT: enableGPHDTCheckbox.checked,
+                        PVTSLN: enablePVTSLNCheckbox.checked,
+                    },
+                    constellations: {
+                        GPS: enableGPSCheckbox.checked,
+                        GLONASS: enableGLONASSCheckbox.checked,
+                        BDS: enableBDSCheckbox.checked,
+                        GALILEO: enableGALILEOCheckbox.checked,
+                        QZSS: enableQZSSCheckbox.checked,
+                    },
+                    elevationMask: parseInt(elevationMaskSelect.value),
+                    baselineLength: parseFloat(baselineLengthInput.value),
+                    azimuthOffset: parseFloat(azimuthOffsetInput.value),
+                    pitchOffset: parseFloat(pitchOffsetInput.value)
+                };
+            };
+
+            // Function to generate commands based on current config
+            const generateCommands = (config) => {
+                const commands = [];
+                const interval = config.updateInterval;
+
+                // Enable/Disable NMEA messages
+                if (config.outputMessages.GPGGA) {
+                    commands.push(`LOG GPGGA ONTIME ${interval}`);
+                } else {
+                    commands.push(`LOG GPGGA OFF`);
+                }
+                if (config.outputMessages.GPRMC) {
+                    commands.push(`LOG GPRMC ONTIME ${interval}`);
+                } else {
+                    commands.push(`LOG GPRMC OFF`);
+                }
+                if (config.outputMessages.GPVTG) {
+                    commands.push(`LOG GPVTG ONTIME ${interval}`);
+                } else {
+                    commands.push(`LOG GPVTG OFF`);
+                }
+                if (config.outputMessages.GPHDT) {
+                    commands.push(`LOG GPHDT ONTIME ${interval}`);
+                } else {
+                    commands.push(`LOG GPHDT OFF`);
+                }
+
+                // Enable/Disable Unicore Binary messages
+                if (config.outputMessages.PVTSLN) {
+                    commands.push(`LOG PVTSLN ONTIME ${interval}`);
+                } else {
+                    commands.push(`LOG PVTSLN OFF`);
+                }
+
+                // Enable/Disable Satellite Constellations
+                // The exact syntax for CONFIG SIGNALGROUP command should be verified in the WTRTK-982 "Unicore Reference Commands Manual".
+                if (config.constellations.GPS) {
+                    commands.push(`CONFIG SIGNALGROUP GPS ENABLE`);
+                } else {
+                    commands.push(`CONFIG SIGNALGROUP GPS DISABLE`);
+                }
+                if (config.constellations.GLONASS) {
+                    commands.push(`CONFIG SIGNALGROUP GLONASS ENABLE`);
+                } else {
+                    commands.push(`CONFIG SIGNALGROUP GLONASS DISABLE`);
+                }
+                if (config.constellations.BDS) {
+                    commands.push(`CONFIG SIGNALGROUP BDS ENABLE`);
+                } else {
+                    commands.push(`CONFIG SIGNALGROUP BDS DISABLE`);
+                }
+                if (config.constellations.GALILEO) {
+                    commands.push(`CONFIG SIGNALGROUP GALILEO ENABLE`);
+                } else {
+                    commands.push(`CONFIG SIGNALGROUP GALILEO DISABLE`);
+                }
+                if (config.constellations.QZSS) {
+                    commands.push(`CONFIG SIGNALGROUP QZSS ENABLE`);
+                } else {
+                    commands.push(`CONFIG SIGNALGROUP QZSS DISABLE`);
+                }
+
+                // Set Elevation Mask
+                commands.push(`MASK ${config.elevationMask}`);
+
+                // Set Antenna Baseline Length
+                commands.push(`CONFIG HEADING LENGTH ${config.baselineLength}`);
+
+                // Set Azimuth and Pitch Offset
+                commands.push(`CONFIG HEADING OFFSET ${config.azimuthOffset} ${config.pitchOffset}`);
+
+                return commands;
+            };
+
+            // 受信データをシミュレートする関数
+            const simulateReceivedData = (config) => {
+                let simulatedOutput = "";
+                const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false });
+                const lat = 35.6895; // Tokyo latitude
+                const lon = 139.6917; // Tokyo longitude
+                const alt = 50.0; // Sample altitude
+                const numSatellites = config.constellations.GPS || config.constellations.GLONASS || config.constellations.BDS || config.constellations.GALILEO || config.constellations.QZSS ? 12 : 0; // Simulate satellites if any constellation is enabled
+                const hdop = 0.8;
+                const speed = 0.5; // m/s
+                const course = 123.45; // degrees true
+
+                // Simulate NMEA messages
+                if (config.outputMessages.GPGGA) {
+                    simulatedOutput += `$GNGGA,${currentTime}.00,${lat.toFixed(7)},N,${lon.toFixed(7)},E,1,${numSatellites},${hdop.toFixed(1)},${alt.toFixed(4)},M,39.9836,M,,*XX\n`;
+                }
+                if (config.outputMessages.GPRMC) {
+                    simulatedOutput += `$GNRMC,${currentTime}.00,A,${lat.toFixed(7)},N,${lon.toFixed(7)},E,${speed.toFixed(2)},${course.toFixed(2)},010124,,,A*XX\n`;
+                }
+                if (config.outputMessages.GPVTG) {
+                    simulatedOutput += `$GNVTG,${course.toFixed(2)},T,${course.toFixed(2)},M,${(speed * 1.94384).toFixed(2)},N,${speed.toFixed(2)},K,A*XX\n`; // Speed in knots and km/h
+                }
+                if (config.outputMessages.GPHDT) {
+                    // Simulate heading based on baseline and offset
+                    const simulatedHeading = (150.0 + config.azimuthOffset).toFixed(1); // Example heading + offset
+                    simulatedOutput += `$GPHDT,${simulatedHeading},T*XX\n`;
+                }
+
+                // Simulate Unicore Binary PVTSLN message (simplified ASCII representation)
+                if (config.outputMessages.PVTSLN) {
+                    simulatedOutput += `[PVTSLN] Lat: ${lat.toFixed(7)}, Lon: ${lon.toFixed(7)}, Alt: ${alt.toFixed(3)}, Heading: ${(150.0 + config.azimuthOffset).toFixed(1)}, Pitch: ${(5.0 + config.pitchOffset).toFixed(1)}, Roll: 0.0, Solution: FIXED\n`;
+                }
+
+                if (simulatedOutput === "") {
+                    simulatedOutput = "選択されたメッセージタイプに対応するシミュレートデータはありません。";
+                }
+
+                return simulatedOutput;
+            };
+
+            // Event listener for Write Config button
+            writeConfigBtn.addEventListener('click', async () => {
+                const config = getCurrentConfig();
+                const commands = generateCommands(config);
+
+                showStatusMessage('設定を書き込み中...', 'info');
+                receivedDataDisplay.value = ''; // Clear previous data
+
+                try {
+                    console.log('シミュレートされた書き込みコマンド:', commands);
+                    console.log('シミュレートされたポート:', config.serialPort);
+                    console.log('シミュレートされたボーレート:', config.baudRate);
+
+                    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
+
+                    // Simulate module response for commands (OK message)
+                    let commandResponses = commands.map(cmd => `$command,${cmd},response: OK*XX`).join('\n');
+                    receivedDataDisplay.value = commandResponses + '\n\n';
+
+                    // Simulate received data after commands are processed
+                    showStatusMessage('設定が正常に書き込まれました。受信データをシミュレート中...', 'success');
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait a bit before showing data
+
+                    const simulatedData = simulateReceivedData(config);
+                    receivedDataDisplay.value += simulatedData;
+
+                    showStatusMessage('設定が正常に書き込まれました。受信データを確認してください。', 'success');
+
+                } catch (error) {
+                    console.error('設定書き込みエラー:', error);
+                    showStatusMessage(`設定書き込みに失敗しました: ${error.message}`, 'error');
+                }
+            });
+
+            // Event listener for Save Config button
+            saveConfigBtn.addEventListener('click', async () => {
+                const config = getCurrentConfig();
+                showStatusMessage('設定をモジュールに保存中...', 'info');
+
+                try {
+                    console.log('シミュレートされた保存コマンド: SAVE');
+                    console.log('シミュレートされたポート:', config.serialPort);
+                    console.log('シミュレートされたボーレート:', config.baudRate);
+
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
+                    showStatusMessage('設定がモジュールに保存されました。', 'success');
+                    showStatusMessage('設定はモジュールの電源を切っても保持されます。', 'success');
+                } catch (error) {
+                    console.error('設定保存エラー:', error);
+                    showStatusMessage(`設定保存に失敗しました: ${error.message}`, 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
