@@ -113,7 +113,9 @@ def save_config():
         return jsonify({"status": "error", "message": "Missing port or baudrate"}), 400
 
     app.logger.info(f"Received save config request for port: {port}, baudrate: {baudrate}")
-    save_command = "SAVE\r\n" # SAVEコマンド
+　　　save_command = "SAVECONFIG\r\n"
+
+    
 
     try:
         ser = serial.Serial(port, baudrate, timeout=SERIAL_TIMEOUT, write_timeout=SERIAL_TIMEOUT)
