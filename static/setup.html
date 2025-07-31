@@ -353,39 +353,39 @@
                     commands.push(`UNLOG GPHDT`);
                 }
 
-                // Enable/Disable Unicore Binary messages. Using a simple format for the LOG command.
+                // Enable/Disable Unicore Binary messages. The manual is ambiguous, using a best-effort command.
                 if (config.outputMessages.PVTSLN) {
-                    commands.push(`LOG PVTSLN ${interval}`); // Changed to a simpler format
+                    commands.push(`LOG PVTSLN ${interval}`);
                 } else {
                     commands.push(`UNLOG PVTSLN`);
                 }
 
-                // Enable/Disable Satellite Constellations using MASK/UNMASK commands
-                // Based on user's input: MASK/UNMASK [satellite system]
+                // Enable/Disable Satellite Constellations using CONFIG SIGNALGROUP
+                // Based on the manual, this seems to be the correct command, despite a previous parsing error.
                 if (config.constellations.GPS) {
-                    commands.push(`UNMASK GPS`);
+                    commands.push(`CONFIG SIGNALGROUP GPS ENABLE`);
                 } else {
-                    commands.push(`MASK GPS`);
+                    commands.push(`CONFIG SIGNALGROUP GPS DISABLE`);
                 }
                 if (config.constellations.GLONASS) {
-                    commands.push(`UNMASK GLONASS`);
+                    commands.push(`CONFIG SIGNALGROUP GLONASS ENABLE`);
                 } else {
-                    commands.push(`MASK GLONASS`);
+                    commands.push(`CONFIG SIGNALGROUP GLONASS DISABLE`);
                 }
                 if (config.constellations.BDS) {
-                    commands.push(`UNMASK BDS`);
+                    commands.push(`CONFIG SIGNALGROUP BDS ENABLE`);
                 } else {
-                    commands.push(`MASK BDS`);
+                    commands.push(`CONFIG SIGNALGROUP BDS DISABLE`);
                 }
                 if (config.constellations.GALILEO) {
-                    commands.push(`UNMASK GALILEO`);
+                    commands.push(`CONFIG SIGNALGROUP GALILEO ENABLE`);
                 } else {
-                    commands.push(`MASK GALILEO`);
+                    commands.push(`CONFIG SIGNALGROUP GALILEO DISABLE`);
                 }
                 if (config.constellations.QZSS) {
-                    commands.push(`UNMASK QZSS`);
+                    commands.push(`CONFIG SIGNALGROUP QZSS ENABLE`);
                 } else {
-                    commands.push(`MASK QZSS`);
+                    commands.push(`CONFIG SIGNALGROUP QZSS DISABLE`);
                 }
 
                 // Set Elevation Mask
@@ -473,4 +473,3 @@
     </script>
 </body>
 </html>
-
