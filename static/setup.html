@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -331,61 +331,61 @@
                 const commands = [];
                 const interval = config.updateInterval;
 
-                // Enable/Disable NMEA messages
+                // Enable/Disable NMEA messages. If unchecked, use UNLOG.
                 if (config.outputMessages.GPGGA) {
                     commands.push(`LOG GPGGA ONTIME ${interval}`);
                 } else {
-                    commands.push(`LOG GPGGA OFF`);
+                    commands.push(`UNLOG GPGGA`);
                 }
                 if (config.outputMessages.GPRMC) {
                     commands.push(`LOG GPRMC ONTIME ${interval}`);
                 } else {
-                    commands.push(`LOG GPRMC OFF`);
+                    commands.push(`UNLOG GPRMC`);
                 }
                 if (config.outputMessages.GPVTG) {
                     commands.push(`LOG GPVTG ONTIME ${interval}`);
                 } else {
-                    commands.push(`LOG GPVTG OFF`);
+                    commands.push(`UNLOG GPVTG`);
                 }
                 if (config.outputMessages.GPHDT) {
                     commands.push(`LOG GPHDT ONTIME ${interval}`);
                 } else {
-                    commands.push(`LOG GPHDT OFF`);
+                    commands.push(`UNLOG GPHDT`);
                 }
 
-                // Enable/Disable Unicore Binary messages
+                // Enable/Disable Unicore Binary messages. Using a simple format for the LOG command.
                 if (config.outputMessages.PVTSLN) {
-                    commands.push(`LOG PVTSLN ONTIME ${interval}`);
+                    commands.push(`LOG PVTSLN ${interval}`); // Changed to a simpler format
                 } else {
-                    commands.push(`LOG PVTSLN OFF`);
+                    commands.push(`UNLOG PVTSLN`);
                 }
 
-                // Enable/Disable Satellite Constellations
-                // The exact syntax for CONFIG SIGNALGROUP command should be verified in the WTRTK-982 "Unicore Reference Commands Manual".
+                // Enable/Disable Satellite Constellations using MASK/UNMASK commands
+                // Based on user's input: MASK/UNMASK [satellite system]
                 if (config.constellations.GPS) {
-                    commands.push(`CONFIG SIGNALGROUP GPS ENABLE`);
+                    commands.push(`UNMASK GPS`);
                 } else {
-                    commands.push(`CONFIG SIGNALGROUP GPS DISABLE`);
+                    commands.push(`MASK GPS`);
                 }
                 if (config.constellations.GLONASS) {
-                    commands.push(`CONFIG SIGNALGROUP GLONASS ENABLE`);
+                    commands.push(`UNMASK GLONASS`);
                 } else {
-                    commands.push(`CONFIG SIGNALGROUP GLONASS DISABLE`);
+                    commands.push(`MASK GLONASS`);
                 }
                 if (config.constellations.BDS) {
-                    commands.push(`CONFIG SIGNALGROUP BDS ENABLE`);
+                    commands.push(`UNMASK BDS`);
                 } else {
-                    commands.push(`CONFIG SIGNALGROUP BDS DISABLE`);
+                    commands.push(`MASK BDS`);
                 }
                 if (config.constellations.GALILEO) {
-                    commands.push(`CONFIG SIGNALGROUP GALILEO ENABLE`);
+                    commands.push(`UNMASK GALILEO`);
                 } else {
-                    commands.push(`CONFIG SIGNALGROUP GALILEO DISABLE`);
+                    commands.push(`MASK GALILEO`);
                 }
                 if (config.constellations.QZSS) {
-                    commands.push(`CONFIG SIGNALGROUP QZSS ENABLE`);
+                    commands.push(`UNMASK QZSS`);
                 } else {
-                    commands.push(`CONFIG SIGNALGROUP QZSS DISABLE`);
+                    commands.push(`MASK QZSS`);
                 }
 
                 // Set Elevation Mask
@@ -473,3 +473,4 @@
     </script>
 </body>
 </html>
+
